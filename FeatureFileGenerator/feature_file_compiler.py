@@ -29,7 +29,7 @@ def main():
         ff.initialise_entity_type()
         ff.initialise_entity_name()
         ff.initialise_all_test_cases()
-        ff.test_stepper()
+        ff.feature_file_maker()
         ff.feature_file_writer()
 
 
@@ -51,13 +51,10 @@ class FeatureFileCompiler():
         else:
             self.entity_name = requester.entity_name_getter(self.tp_id)
     
-    def test_stepper(self):
+    def feature_file_maker(self):
         for test_case in self.test_cases:
-            self.tagger(test_case)
-            if("Scenario: " not in test_case["Name"] and "Scenario Outline: " not in test_case["Name"]): 
-                self.feature.append("Scenario: " + test_case["Name"])
-            else:
-                self.feature.append(test_case["Name"])
+            self.tag_formatter(test_case)
+            self.feature_file.append(FeatureFileCompiler.title_formatter(test_case["Name"]))
             for test_step in test_case["TestSteps"]["Items"]:
                 description = test_step["Description"]
                 result = test_step["Result"]
@@ -92,7 +89,7 @@ class FeatureFileCompiler():
                 line = line.replace(u"\u02da", "°")
                 f.write(line + "\n")
 
-    def tagger(self, test_case):
+    def tag_formatter(self, test_case):
         tags = ""
         if(self.args.user_tags):
             for tag in self.args.user_tags:
@@ -112,6 +109,13 @@ class FeatureFileCompiler():
                             continue
                     tags += "@" + tag.replace(" ", "_") + " "
                 self.feature.append(tags)
+
+    @staticmethod
+    def title_formatter(test_title):
+        if("Scenario: " not in test_case["Name"] and "Scenario Outline: " not in test_case["Name"]): 
+            return "Scenario: " + test_title
+        else:
+            return test_title
 
     @staticmethod
     def strip_html(line):
