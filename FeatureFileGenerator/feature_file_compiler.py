@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 entity_types = {
+    "Project": requester.project,
     "Feature": requester.feature,
     "TestPlan": requester.test_plan,
     "TestCase": requester.test_case
@@ -14,69 +15,108 @@ entity_types = {
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("entity", help="The target process entity needed to supply to the request e.g. \'TestPlans/27932\'", type=str, nargs="+")
+    parser = argparse.ArgumentParser(description="A script to compile a given Target Process entity into a Gherkin Feature File")
+    parser.add_argument("entity", help="The target process entities needed to supply to the request e.g. '14383 27386' ", metavar="entity", type=str, nargs="+")
+    parser.add_argument("-s", "--sprint_tag", help="Add tags to the feature file that indicate when the Linked Assignable of a test case was completed", action="store_true")
+    parser.add_argument("-i", "--id_tag", help="Add a tag showing the Target Process test case ID", action="store_true")
+    parser.add_argument("-u", "--user_tags", help="Add user specified tags to all test cases", type=str, nargs="+")
+    parser.add_argument("-t", "--target_process_tags", help="Add tags from Target Process to cards", action="store_true")
+    parser.add_argument("-x", "--exempted_tags", help="Specify Target Process tags that you wish to exempt", type=str, nargs="+")
     args = parser.parse_args()
 
     for tp_entity_id in args.entity:
-        entity = requester.entity_type_getter(tp_entity_id)
-        entity_type = entity_checker(entity)
-        feature = feature_file_maker(entity_type, tp_entity_id)
-        name = json.loads(requester.feature_name_getter(tp_entity_id))["Name"]
-        feature_as_list = []
-        feature_file = test_stepper(feature, feature_as_list)
-        feature_file_printer(feature_file, name)
+        ff = FeatureFileCompiler(tp_entity_id, args)
+        ff.get_entity_type()
+        ff.get_entity_name()
+        ff.get_all_test_cases()
+        ff.test_stepper()
+        ff.feature_file_writer()
 
 
-def entity_checker(entity):
-    json_entity = json.loads(entity)
-    return json_entity["EntityType"]["Name"]
+class FeatureFileCompiler():
+    def __init__(self, tp_id, args):
+        self.tp_id = tp_id
+        self.args = args
+        self.feature = []
 
+    def get_entity_type(self):
+        self.entity_type = requester.entity_type_getter(self.tp_id)
 
-def strip_html(line):
-    if not line:
-        return line
-    html_tags = re.compile(r"<[^>]*>")
-    line = html_tags.sub("", line)
-    return unescape(line.replace("&nbsp;", " "))
+    def get_all_test_cases(self):
+        self.test_cases = entity_types[self.entity_type](self.tp_id)
 
+    def get_entity_name(self):
+        if(self.entity_type == "TestCase"):
+            self.entity_name = "Test Case " + self.tp_id
+        else:
+            self.entity_name = requester.entity_name_getter(self.tp_id)
+    
+    def test_stepper(self):
+        for test_case in self.test_cases:
+            self.tagger(test_case)
+            self.feature.append("Scenario: " + test_case["Name"])
+            for test_step in test_case["TestSteps"]["Items"]:
+                description = test_step["Description"]
+                result = test_step["Result"]
+                if("Examples" in description):
+                    table = description.split("|")
+                    for line in table:
+                        if FeatureFileCompiler.strip_html(line) != "":
+                            if "Examples:" not in line:
+                                line = "|" + line + "|"
+                            self.feature.append(FeatureFileCompiler.strip_html(line))
+                elif(description != "" and (result == "<div><br></div>" or result == "")):
+                    self.feature.append(FeatureFileCompiler.strip_html(description))
+                elif(description != "<div><br></div>" and description != "") and (result != "" and result != "<div><br></div>"):
+                    self.feature.append(FeatureFileCompiler.strip_html(description))
+                    self.feature.append(FeatureFileCompiler.strip_html(test_step["Result"]))
+                elif((description == "" or description == "<div><br></div>") and (result != "" and result != "<div><br></div>")):
+                    self.feature.append(FeatureFileCompiler.strip_html(result))
+            self.feature.append("")
+    
+    def feature_file_writer(self):
+        try:
+            feature_name = self.entity_name.split(": ")[1] + ".feature"
+        except:
+            feature_name = self.entity_name + ".feature"
+        base_path = Path(__file__).parent
+        file_path = (base_path / feature_name).resolve()
 
-def feature_file_printer(feature_as_list, name):
-    feature_name = name + ".feature"
-    base_path = Path(__file__).parent
-    file_path = (base_path / "../behave/features/" / feature_name).resolve()
+        with open(file_path, "w+", encoding="utf-8") as f:
+            f.write("Feature: " + self.entity_name + "\n\r")
+            for line in self.feature:
+                line = line.replace(u"\u200b", "")
+                line = line.replace(u"\u02da", "°")
+                f.write(line + "\n")
 
-    with open(file_path, "w+") as f:
-        f.write("Feature: " + name + "\n\r")
-        for line in feature_as_list:
-            f.write(line + "\n")
+    def tagger(self, test_case):
+        tags = ""
+        if(self.args.user_tags):
+            for tag in self.args.user_tags:
+                self.feature.append("@" + tag.strip().replace(" ", "_"))
+        if(self.args.sprint_tag):
+            try:
+                self.feature.append("@" + self.test_case["TestPlans"]["Items"][0]["LinkedAssignable"]["Iteration"]["Name"].replace(" ", "_"))
+            except:
+                self.feature.append("@no_sprint")
+        if(self.args.id_tag):
+            self.feature.append("@TP_" + str(test_case["Id"]))
+        if(self.args.target_process_tags):
+            if(test_case["Tags"]):
+                for tag in test_case["Tags"].split(", "):
+                    if(self.args.exempted_tags):
+                        if(tag.replace(" ", "_") in self.args.exempted_tags):
+                            continue
+                    tags += "@" + tag.replace(" ", "_") + " "
+                self.feature.append(tags)
 
-
-def feature_file_maker(entity_type, tp_entity_id):
-    test_cases = entity_types[entity_type](tp_entity_id)
-    return test_cases
-
-
-def test_stepper(test_cases, feature_as_list):
-    test_cases_unloaded = []
-    for test_case in test_cases:
-        test_cases_unloaded.append(json.loads(test_case))
-
-    for test_case in test_cases_unloaded:
-        feature_as_list.append(test_case["Name"])
-        for test_step in test_case["TestSteps"]["Items"]:
-            description = test_step["Description"]
-            if "Examples" in description:
-                table = description.split("|")
-                for line in table:
-                    if strip_html(line) != "":
-                        if "Examples:" not in line:
-                            line = "|" + line + "|"
-                        feature_as_list.append(strip_html(line))
-            else:
-                feature_as_list.append(strip_html(description))
-        feature_as_list.append("")
-    return feature_as_list
+    @staticmethod
+    def strip_html(line):
+        if not line:
+            return line
+        html_tags = re.compile(r"<[^>]*>")
+        line = html_tags.sub("", line)
+        return unescape(line.replace("&nbsp;", " "))
 
 
 if __name__ == "__main__":
