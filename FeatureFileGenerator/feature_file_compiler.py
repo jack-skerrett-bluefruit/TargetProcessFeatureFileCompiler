@@ -26,9 +26,9 @@ def main():
 
     for tp_entity_id in args.entity:
         ff = FeatureFileCompiler(tp_entity_id, args)
-        ff.get_entity_type()
-        ff.get_entity_name()
-        ff.get_all_test_cases()
+        ff.initialise_entity_type()
+        ff.initialise_entity_name()
+        ff.initialise_all_test_cases()
         ff.test_stepper()
         ff.feature_file_writer()
 
@@ -39,13 +39,13 @@ class FeatureFileCompiler():
         self.args = args
         self.feature = []
 
-    def get_entity_type(self):
+    def initialise_entity_type(self):
         self.entity_type = requester.entity_type_getter(self.tp_id)
 
-    def get_all_test_cases(self):
+    def initialise_all_test_cases(self):
         self.test_cases = entity_types[self.entity_type](self.tp_id)
 
-    def get_entity_name(self):
+    def initialise_entity_name(self):
         if(self.entity_type == "TestCase"):
             self.entity_name = "Test Case " + self.tp_id
         else:
