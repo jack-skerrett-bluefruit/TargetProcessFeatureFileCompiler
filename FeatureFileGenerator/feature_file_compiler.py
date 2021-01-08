@@ -54,8 +54,10 @@ class FeatureFileCompiler():
     def test_stepper(self):
         for test_case in self.test_cases:
             self.tagger(test_case)
-            if("Scenario: " not in test_case["Name"] or "Scenario Outline: " not in test_case["Name"]): 
+            if("Scenario: " not in test_case["Name"] and "Scenario Outline: " not in test_case["Name"]): 
                 self.feature.append("Scenario: " + test_case["Name"])
+            else:
+                self.feature.append(test_case["Name"])
             for test_step in test_case["TestSteps"]["Items"]:
                 description = test_step["Description"]
                 result = test_step["Result"]

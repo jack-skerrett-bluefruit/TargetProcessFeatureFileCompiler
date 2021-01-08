@@ -1,5 +1,6 @@
 .venv/
 .vscode/
 TesterProjectAutomation.code-workspace
-__pychace__/
+__pycache__/
 settings.py
+*.feature
