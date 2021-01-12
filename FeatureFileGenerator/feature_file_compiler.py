@@ -29,7 +29,7 @@ def main():
         ff.initialise_entity_type()
         ff.initialise_entity_name()
         ff.initialise_all_test_cases()
-        ff.test_stepper()
+        ff.feature_file_maker()
         ff.feature_file_writer()
 
 
@@ -51,30 +51,13 @@ class FeatureFileCompiler():
         else:
             self.entity_name = requester.entity_name_getter(self.tp_id)
     
-    def test_stepper(self):
+    def feature_file_maker(self):
         for test_case in self.test_cases:
-            self.tagger(test_case)
-            if("Scenario: " not in test_case["Name"] and "Scenario Outline: " not in test_case["Name"]): 
-                self.feature.append("Scenario: " + test_case["Name"])
-            else:
-                self.feature.append(test_case["Name"])
+            self.tag_formatter(test_case)
+            self.feature.append(FeatureFileCompiler.title_formatter(test_case["Name"]))
             for test_step in test_case["TestSteps"]["Items"]:
-                description = test_step["Description"]
-                result = test_step["Result"]
-                if("Examples" in description):
-                    table = description.split("|")
-                    for line in table:
-                        if FeatureFileCompiler.strip_html(line) != "":
-                            if "Examples:" not in line:
-                                line = "|" + line + "|"
-                            self.feature.append(FeatureFileCompiler.strip_html(line))
-                elif(description != "" and (result == "<div><br></div>" or result == "")):
-                    self.feature.append(FeatureFileCompiler.strip_html(description))
-                elif(description != "<div><br></div>" and description != "") and (result != "" and result != "<div><br></div>"):
-                    self.feature.append(FeatureFileCompiler.strip_html(description))
-                    self.feature.append(FeatureFileCompiler.strip_html(test_step["Result"]))
-                elif((description == "" or description == "<div><br></div>") and (result != "" and result != "<div><br></div>")):
-                    self.feature.append(FeatureFileCompiler.strip_html(result))
+                self.test_body_formatter(FeatureFileCompiler.strip_html(test_step["Description"]),
+                                        FeatureFileCompiler.strip_html(test_step["Result"]))
             self.feature.append("")
     
     def feature_file_writer(self):
@@ -92,7 +75,7 @@ class FeatureFileCompiler():
                 line = line.replace(u"\u02da", "°")
                 f.write(line + "\n")
 
-    def tagger(self, test_case):
+    def tag_formatter(self, test_case):
         tags = ""
         if(self.args.user_tags):
             for tag in self.args.user_tags:
@@ -105,13 +88,30 @@ class FeatureFileCompiler():
         if(self.args.id_tag):
             self.feature.append("@TP_" + str(test_case["Id"]))
         if(self.args.target_process_tags):
-            if(test_case["Tags"]):
-                for tag in test_case["Tags"].split(", "):
-                    if(self.args.exempted_tags):
-                        if(tag.replace(" ", "_") in self.args.exempted_tags):
-                            continue
-                    tags += "@" + tag.replace(" ", "_") + " "
-                self.feature.append(tags)
+            if(not test_case["Tags"]):
+                return
+            for tag in test_case["Tags"].split(", "):
+                if(self.args.exempted_tags):
+                    if(tag.replace(" ", "_") in self.args.exempted_tags):
+                        continue
+                tags += "@" + tag.replace(" ", "_") + " "
+            self.feature.append(tags)
+
+    def test_body_formatter(self, description, result):
+        if("Examples" in description):
+            self.feature.append("")
+        if(description != ""):
+            self.feature.append(description)
+        if(result != ""):
+            self.feature.append(result)
+            
+
+    @staticmethod
+    def title_formatter(test_title):
+        if("Scenario: " not in test_title and "Scenario Outline: " not in test_title): 
+            return "Scenario: " + test_title
+        else:
+            return test_title
 
     @staticmethod
     def strip_html(line):

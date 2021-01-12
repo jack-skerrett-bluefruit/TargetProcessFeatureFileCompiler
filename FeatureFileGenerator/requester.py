@@ -33,14 +33,11 @@ class ProjectEntityRequester(TestCaseEntityRequester):
         request = urllib.request.Request(self.request_uri)
         self.response = json.loads(urllib.request.urlopen(request).read().decode("UTF-8"))
         self.append_response_to_test_cases()
-        while(1):
-            if("Next" in self.response):
-                next_getter = EntityRequester(self.response["Next"].split("v1/")[1].replace(" ", "%20"))
-                next_getter.get_entity() 
-                self.response = next_getter.response
-                self.append_response_to_test_cases()
-            else:
-                break
+        while("Next" in self.response):
+            next_getter = EntityRequester(self.response["Next"].split("v1/")[1].replace(" ", "%20"))
+            next_getter.get_entity() 
+            self.response = next_getter.response
+            self.append_response_to_test_cases()
         return self.test_cases
 
     def append_response_to_test_cases(self):
