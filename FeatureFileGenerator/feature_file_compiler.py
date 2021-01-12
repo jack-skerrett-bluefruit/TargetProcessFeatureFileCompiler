@@ -54,24 +54,10 @@ class FeatureFileCompiler():
     def feature_file_maker(self):
         for test_case in self.test_cases:
             self.tag_formatter(test_case)
-            self.feature_file.append(FeatureFileCompiler.title_formatter(test_case["Name"]))
+            self.feature.append(FeatureFileCompiler.title_formatter(test_case["Name"]))
             for test_step in test_case["TestSteps"]["Items"]:
-                description = test_step["Description"]
-                result = test_step["Result"]
-                if("Examples" in description):
-                    table = description.split("|")
-                    for line in table:
-                        if FeatureFileCompiler.strip_html(line) != "":
-                            if "Examples:" not in line:
-                                line = "|" + line + "|"
-                            self.feature.append(FeatureFileCompiler.strip_html(line))
-                elif(description != "" and (result == "<div><br></div>" or result == "")):
-                    self.feature.append(FeatureFileCompiler.strip_html(description))
-                elif(description != "<div><br></div>" and description != "") and (result != "" and result != "<div><br></div>"):
-                    self.feature.append(FeatureFileCompiler.strip_html(description))
-                    self.feature.append(FeatureFileCompiler.strip_html(test_step["Result"]))
-                elif((description == "" or description == "<div><br></div>") and (result != "" and result != "<div><br></div>")):
-                    self.feature.append(FeatureFileCompiler.strip_html(result))
+                self.test_body_formatter(FeatureFileCompiler.strip_html(test_step["Description"]),
+                                        FeatureFileCompiler.strip_html(test_step["Result"]))
             self.feature.append("")
     
     def feature_file_writer(self):
@@ -102,17 +88,27 @@ class FeatureFileCompiler():
         if(self.args.id_tag):
             self.feature.append("@TP_" + str(test_case["Id"]))
         if(self.args.target_process_tags):
-            if(test_case["Tags"]):
-                for tag in test_case["Tags"].split(", "):
-                    if(self.args.exempted_tags):
-                        if(tag.replace(" ", "_") in self.args.exempted_tags):
-                            continue
-                    tags += "@" + tag.replace(" ", "_") + " "
-                self.feature.append(tags)
+            if(not test_case["Tags"]):
+                return
+            for tag in test_case["Tags"].split(", "):
+                if(self.args.exempted_tags):
+                    if(tag.replace(" ", "_") in self.args.exempted_tags):
+                        continue
+                tags += "@" + tag.replace(" ", "_") + " "
+            self.feature.append(tags)
+
+    def test_body_formatter(self, description, result):
+        if("Examples" in description):
+            self.feature.append("")
+        if(description != ""):
+            self.feature.append(description)
+        if(result != ""):
+            self.feature.append(result)
+            
 
     @staticmethod
     def title_formatter(test_title):
-        if("Scenario: " not in test_case["Name"] and "Scenario Outline: " not in test_case["Name"]): 
+        if("Scenario: " not in test_title and "Scenario Outline: " not in test_title): 
             return "Scenario: " + test_title
         else:
             return test_title
