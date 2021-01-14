@@ -25,8 +25,9 @@ class TestCaseEntityRequester():
 
 
 class ProjectEntityRequester(TestCaseEntityRequester):
-    def __init__(self, entity, include, formatted):
+    def __init__(self, entity, include, formatted, features=False):
         super().__init__(entity, include, formatted)
+        self.features = features
         self.test_cases = []
 
     def get_entity(self):

@@ -22,6 +22,7 @@ def main():
     parser.add_argument("-u", "--user_tags", help="Add user specified tags to all test cases", type=str, nargs="+")
     parser.add_argument("-t", "--target_process_tags", help="Add tags from Target Process to cards", action="store_true")
     parser.add_argument("-x", "--exempted_tags", help="Specify Target Process tags that you wish to exempt", type=str, nargs="+")
+    parser.add_argument("-f", "--feature", help="If one (or more) of the given entities is a project, it will broken down it's features", action="store_true")
     args = parser.parse_args()
 
     for tp_entity_id in args.entity:
