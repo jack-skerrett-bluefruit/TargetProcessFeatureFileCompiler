@@ -4,6 +4,7 @@ import json
 import re
 from html import unescape
 from pathlib import Path
+from datetime import datetime
 
 
 entity_types = {
@@ -23,6 +24,7 @@ def main():
     parser.add_argument("-t", "--target_process_tags", help="Add tags from Target Process to cards", action="store_true")
     parser.add_argument("-x", "--exempted_tags", help="Specify Target Process tags that you wish to exempt", type=str, nargs="+")
     parser.add_argument("-f", "--feature", help="If one (or more) of the given entities is a project, it will broken down it's features", action="store_true")
+    parser.add_argument("-l", "--last_run", help="Add the date/time the test was last run, along with the result", action="store_true")
     args = parser.parse_args()
 
     for tp_entity_id in args.entity:
@@ -55,6 +57,8 @@ class FeatureFileCompiler():
     def feature_file_maker(self):
         for test_case in self.test_cases:
             self.tag_formatter(test_case)
+            if(self.args.last_run and "LastRunDate" in test_case):
+                self.last_run_data(test_case)
             self.feature.append(FeatureFileCompiler.title_formatter(test_case["Name"]))
             for test_step in test_case["TestSteps"]["Items"]:
                 self.test_body_formatter(FeatureFileCompiler.strip_html(test_step["Description"]),
@@ -105,7 +109,19 @@ class FeatureFileCompiler():
             self.feature.append(description)
         if(result != ""):
             self.feature.append(result)
-            
+    
+    def last_run_data(self, test_case):
+        last_run_date = test_case["LastRunDate"]
+        last_run_status = test_case["LastRunStatus"]
+        self.feature.append("@{}_{}".format(last_run_status, self.date_time_formatter(last_run_date)).replace(" ", "_"))
+
+    @staticmethod
+    def date_time_formatter(date_time):
+        try:
+            formatted_date_time = int(date_time.split("(")[1][:10])
+            return datetime.fromtimestamp(formatted_date_time).strftime('%d-%m-%Y')
+        except:
+            return "N/A"
 
     @staticmethod
     def title_formatter(test_title):
