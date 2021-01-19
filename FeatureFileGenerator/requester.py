@@ -107,6 +107,6 @@ def test_plan(entity):
 def test_case(entity):
     test_cases = []
     entity_name_and_id = "TestCase/" + str(entity)
-    test_case_getter = TestCaseEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result]]", "/?format=json")
+    test_case_getter = TestCaseEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],LastRunDate,LastRunStatus]", "/?format=json")
     test_cases.append(test_case_getter.get_entity())
     return test_cases
