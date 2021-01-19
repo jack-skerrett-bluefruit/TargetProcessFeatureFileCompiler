@@ -14,6 +14,11 @@ class EntityRequester():
         self.response = json.loads(response.read().decode("UTF-8"))
 
 
+class FeaturesInAProjectRequester(EntityRequester): #fuckin broken
+    def __init__(self, entity):
+        super().__init__(entity)
+        self.entity = entity + "/features?where=Project.id%20in%20(27623)&include=[Name,Tags]&format=json"
+
 class TestCaseEntityRequester():
     def __init__(self, entity, include, formatted):
         self.request_uri = tp_uri + entity + formatted + "&include=" + include + "&access_token=" + token
@@ -68,7 +73,7 @@ def test_case_id_getter(entity_name_and_id):
 
 def project(entity):
     entity_name_and_id = "testcases?where=Project.id%20in%20(" + entity + ")&take=2000&skip=0"
-    project_getter = ProjectEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],TestPlans[LinkedAssignable[Iteration]]]", "&format=json")
+    project_getter = ProjectEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],TestPlans[LinkedAssignable[Iteration]],LastRunDate,LastRunStatus]", "&format=json")
     project = project_getter.get_entity()
     return project
 
@@ -108,6 +113,6 @@ def test_plan(entity):
 def test_case(entity):
     test_cases = []
     entity_name_and_id = "TestCase/" + str(entity)
-    test_case_getter = TestCaseEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],LastRunDate,LastRunStatus]", "/?format=json")
+    test_case_getter = TestCaseEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],TestPlans[LinkedAssignable[Iteration]],LastRunDate,LastRunStatus]", "/?format=json")
     test_cases.append(test_case_getter.get_entity())
     return test_cases

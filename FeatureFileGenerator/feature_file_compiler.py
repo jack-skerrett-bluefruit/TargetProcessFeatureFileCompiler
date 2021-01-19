@@ -23,17 +23,21 @@ def main():
     parser.add_argument("-u", "--user_tags", help="Add user specified tags to all test cases", type=str, nargs="+")
     parser.add_argument("-t", "--target_process_tags", help="Add tags from Target Process to cards", action="store_true")
     parser.add_argument("-x", "--exempted_tags", help="Specify Target Process tags that you wish to exempt", type=str, nargs="+")
-    parser.add_argument("-f", "--feature", help="If one (or more) of the given entities is a project, it will broken down it's features", action="store_true")
+    parser.add_argument("-f", "--features", help="Return the IDs of all features to CLI, and creates an 'all_feature.txt' file", action="store_true")
     parser.add_argument("-l", "--last_run", help="Add the date/time the test was last run, along with the result", action="store_true")
     args = parser.parse_args()
 
     for tp_entity_id in args.entity:
-        ff = FeatureFileCompiler(tp_entity_id, args)
-        ff.initialise_entity_type()
-        ff.initialise_entity_name()
-        ff.initialise_all_test_cases()
-        ff.feature_file_maker()
-        ff.feature_file_writer()
+        if(args.features):
+            all_features_requester = requester.FeaturesInAProjectRequester(tp_entity_id)
+            print(all_features_requester.get_entity().response)
+        else:
+            ff = FeatureFileCompiler(tp_entity_id, args)
+            ff.initialise_entity_type()
+            ff.initialise_entity_name()
+            ff.initialise_all_test_cases()
+            ff.feature_file_maker()
+            ff.feature_file_writer()
 
 
 class FeatureFileCompiler():
