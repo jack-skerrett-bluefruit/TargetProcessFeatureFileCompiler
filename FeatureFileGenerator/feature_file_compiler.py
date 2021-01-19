@@ -56,7 +56,7 @@ class FeatureFileCompiler():
     def feature_file_maker(self):
         for test_case in self.test_cases:
             self.tag_formatter(test_case)
-            if(self.args.last_run):
+            if(self.args.last_run and "LastRunDate" in test_case):
                 self.last_run_data(test_case)
             self.feature.append(FeatureFileCompiler.title_formatter(test_case["Name"]))
             for test_step in test_case["TestSteps"]["Items"]:
