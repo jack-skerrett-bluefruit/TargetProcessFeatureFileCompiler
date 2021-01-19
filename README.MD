@@ -5,7 +5,7 @@ Use this script with all it's wonderful capabilities to turn your boring old Tar
 # So how does it work?
 
 * Firstly, make sure you have Python 3 installed (you shouldn't need to worry about a virtual environment or installing any modules)
-* You will then need to create a file called "settings.py" in the "FeatureFileGenerator" directory. Within this file you will need to declate two variables. One is 'tp_url = "https://bluefruit.tpondemand.com/api/v1/"'. For the other, you will need to create an access token from your Target Process account, and then assign it to the variable "access_token".
+* You will then need to create a file called "settings.py" in the "FeatureFileGenerator" directory. Within this file you will need to declate two variables. One is 'tp_url = "https://bluefruit.tpondemand.com/api/v1/"'. For the other, you will need to create an access token from your Target Process account, and then assign it to the variable "token".
 * Then, you can simply call "feature_file_compiler.py --help" from your command line and away you go!
 
 ## Arguments
