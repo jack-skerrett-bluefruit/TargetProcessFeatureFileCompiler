@@ -1,25 +1,25 @@
 import urllib.request
 import json
-from settings import tp_uri, token
+from settings import tp_url, token
 
 class EntityRequester():
     def __init__(self, entity):
-        self.tp_uri = tp_uri
+        self.tp_url = tp_url
         self.token = token
         self.entity = entity
 
     def get_entity(self):
-        request = urllib.request.Request(self.tp_uri + self.entity + "&access_token=" + self.token)
+        request = urllib.request.Request(self.tp_url + self.entity + "&access_token=" + self.token)
         response = urllib.request.urlopen(request)
         self.response = json.loads(response.read().decode("UTF-8"))
 
 
 class TestCaseEntityRequester():
     def __init__(self, entity, include, formatted):
-        self.request_uri = tp_uri + entity + formatted + "&include=" + include + "&access_token=" + token
+        self.request_url = tp_url + entity + formatted + "&include=" + include + "&access_token=" + token
 
     def get_entity(self):
-        request = urllib.request.Request(self.request_uri)
+        request = urllib.request.Request(self.request_url)
         self.response = json.loads(urllib.request.urlopen(request).read().decode("UTF-8"))
         return self.response
 
@@ -30,7 +30,7 @@ class ProjectEntityRequester(TestCaseEntityRequester):
         self.test_cases = []
 
     def get_entity(self):
-        request = urllib.request.Request(self.request_uri)
+        request = urllib.request.Request(self.request_url)
         self.response = json.loads(urllib.request.urlopen(request).read().decode("UTF-8"))
         self.append_response_to_test_cases()
         while("Next" in self.response):
@@ -67,7 +67,7 @@ def test_case_id_getter(entity_name_and_id):
 
 def project(entity):
     entity_name_and_id = "testcases?where=Project.id%20in%20(" + entity + ")&take=2000&skip=0"
-    project_getter = ProjectEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],TestPlans[LinkedAssignable[Iteration]]]", "&format=json")
+    project_getter = ProjectEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],TestPlans[LinkedAssignable[Iteration]],LastRunDate,LastRunStatus]", "&format=json")
     project = project_getter.get_entity()
     return project
 
@@ -107,6 +107,6 @@ def test_plan(entity):
 def test_case(entity):
     test_cases = []
     entity_name_and_id = "TestCase/" + str(entity)
-    test_case_getter = TestCaseEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],LastRunDate,LastRunStatus]", "/?format=json")
+    test_case_getter = TestCaseEntityRequester(entity_name_and_id, "[Name,Tags,TestSteps[Description,Result],TestPlans[LinkedAssignable[Iteration]],LastRunDate,LastRunStatus]", "/?format=json")
     test_cases.append(test_case_getter.get_entity())
     return test_cases
